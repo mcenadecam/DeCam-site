@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeCam — Investor Deck</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0c0f;
+      --surface: #111418;
+      --surface2: #181d24;
+      --border: #1e2530;
+      --accent: #00e5a0;
+      --accent2: #00b8ff;
+      --text: #e8edf4;
+      --muted: #6b7a90;
+      --danger: #ff4d6d;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(10, 12, 15, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+    }
+
+    .nav-logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--accent);
+    }
+
+    .nav-logo span { color: var(--text); }
+
+    .nav-links {
+      display: flex;
+      gap: 0.25rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+      background: var(--surface2);
+    }
+
+    /* ── SECTIONS ── */
+    section {
+      padding: 96px 2rem 80px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    section + section { padding-top: 80px; }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    h2 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-subtitle {
+      color: var(--muted);
+      max-width: 620px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-top: 60px;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(0,229,160,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 70%, rgba(0,184,255,0.05) 0%, transparent 70%);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(0,229,160,0.1);
+      border: 1px solid rgba(0,229,160,0.3);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 6vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 1.25rem;
+    }
+
+    h1 .accent { color: var(--accent); }
+
+    .hero-tagline {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--muted);
+      max-width: 560px;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 4rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover { background: #00ffb3; transform: translateY(-1px); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* metrics strip */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .metric-item {
+      background: var(--surface);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -1px;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── CARDS ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .card:hover {
+      border-color: rgba(0,229,160,0.4);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 1rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .card-link:hover { color: #00ffb3; }
+
+    /* ── DEMO IFRAMES ── */
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .demo-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .demo-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .demo-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    .demo-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .demo-subtitle {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    .demo-frame-container {
+      position: relative;
+      height: 820px;
+    }
+
+    .demo-frame-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #1a1a1c;
+      display: block;
+    }
+
+    .demo-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 820px;
+      gap: 0.75rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      background: var(--surface2);
+    }
+
+    .demo-placeholder .demo-icon { font-size: 2.5rem; }
+
+    /* ── INSTITUTIONAL ── */
+    .institution-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+      transition: border-color 0.2s;
+    }
+
+    .institution-card:hover { border-color: rgba(0,184,255,0.4); }
+
+    .institution-logo {
+      flex-shrink: 0;
+      width: 64px; height: 64px;
+      border-radius: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+
+    .institution-body h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .institution-body p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.9rem;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 100px;
+      border: 1px solid;
+    }
+
+    .badge-green {
+      color: var(--accent);
+      border-color: rgba(0,229,160,0.3);
+      background: rgba(0,229,160,0.08);
+    }
+
+    .badge-blue {
+      color: var(--accent2);
+      border-color: rgba(0,184,255,0.3);
+      background: rgba(0,184,255,0.08);
+    }
+
+    /* ── MARKET ── */
+    .market-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .market-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .market-bar-item { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .market-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+    }
+
+    .market-bar-label .name { font-weight: 600; }
+    .market-bar-label .val { color: var(--accent); font-weight: 700; }
+
+    .bar-track {
+      height: 8px;
+      border-radius: 100px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+    }
+
+    .revenue-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .revenue-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .revenue-card .rc-name {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .revenue-card .rc-val {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── ROADMAP ── */
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .roadmap-phase {
+      background: var(--surface);
+      padding: 1.5rem;
+    }
+
+    .roadmap-phase:nth-child(2),
+    .roadmap-phase:nth-child(4) { background: var(--surface2); }
+
+    .phase-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+    }
+
+    .phase-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .phase-period {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .phase-items {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .phase-items li {
+      font-size: 0.8rem;
+      color: var(--muted);
+      padding-left: 1rem;
+      position: relative;
+    }
+
+    .phase-items li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+
+    /* ── VC SECTION ── */
+    #financiacion {
+      background:
+        radial-gradient(ellipse 50% 60% at 80% 50%, rgba(0,229,160,0.06) 0%, transparent 70%),
+        var(--bg);
+    }
+
+    .invest-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .ask-box {
+      background: var(--surface);
+      border: 1px solid rgba(0,229,160,0.3);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+
+    .ask-amount {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+
+    .ask-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .ask-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .ask-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ask-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .ask-row .label { color: var(--muted); }
+    .ask-row .value { font-weight: 600; }
+
+    .use-of-funds {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+
+    .fund-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .fund-row:last-child { border-bottom: none; }
+
+    .fund-pct {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent);
+      min-width: 58px;
+      letter-spacing: -1px;
+    }
+
+    .fund-detail .fn { font-size: 0.85rem; font-weight: 600; }
+    .fund-detail .fd { font-size: 0.75rem; color: var(--muted); }
+
+    /* ── FOUNDER ── */
+    .founder-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+    }
+
+    .founder-avatar {
+      flex-shrink: 0;
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #000;
+    }
+
+    .founder-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+
+    .founder-role {
+      font-size: 0.8rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+    }
+
+    .founder-bio {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    footer span { color: var(--accent); }
+
+    /* ── DIVIDER ── */
+    .section-divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ── QUOTE BOX ── */
+    .quote-box {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .qa-block {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .qa-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .qa-q {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+      padding: 0.7rem 1rem;
+      background: rgba(0,229,160,0.05);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .qa-a {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 0.7rem 1rem;
+      line-height: 1.6;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .roadmap { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 720px) {
+      nav { padding: 0 1rem; }
+      .nav-links { display: none; }
+      section { padding: 80px 1.25rem 60px; }
+      .demo-grid, .market-row { grid-template-columns: 1fr; }
+      .invest-grid { grid-template-columns: 1fr; }
+      .roadmap { grid-template-columns: 1fr; }
+      .demo-grid { grid-template-columns: 1fr; }
+      .demo-frame-container { height: 600px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVIGATION ── -->
+<nav>
+  <div class="nav-logo">De<span>Cam</span></div>
+  <ul class="nav-links">
+    <li><a href="#investigacion">Investigación</a></li>
+    <li><a href="#demos">Demos</a></li>
+    <li><a href="#institucional">Institucional</a></li>
+    <li><a href="#mercado">Mercado</a></li>
+    <li><a href="#financiacion">Inversión</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-badge">Pre-Seed · Ronda Abierta 2026</div>
+  <h1>Blockchain lleva tu<br /><span class="accent">Cámara a la Justicia</span></h1>
+  <p class="hero-tagline">
+    DeCam es la primera red de videovigilancia descentralizada de Latinoamérica.
+    Almacenamiento inmutable en IPFS, pruebas de privacidad en ZKsync y acceso judicial auditado.
+  </p>
+  <div class="hero-cta">
+    <a href="#financiacion" class="btn btn-primary">Ver Propuesta de Inversión</a>
+    <a href="#demos" class="btn btn-outline">Explorar Demos</a>
+  </div>
+
+  <div class="metrics">
+    <div class="metric-item">
+      <span class="metric-value">$200K</span>
+      <span class="metric-label">Investment Ask</span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-value">$480M</span>
+      <span class="metric-label">TAM Argentina</span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-value">$4.08B</span>
+      <span class="metric-label">TAM Latam</span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-value">Mes 18</span>
+      <span class="metric-label">Break-even</span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-value">4.200</span>
+      <span class="metric-label">Nodos activos BE</span>
+    </div>
+    <div class="metric-item">
+      <span class="metric-value">~$11K</span>
+      <span class="metric-label">Burn rate / mes</span>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── INVESTIGACIÓN ── -->
+<section id="investigacion">
+  <p class="section-label">Base Académica</p>
+  <h2>Trabajos de Investigación</h2>
+  <p class="section-subtitle">
+    DeCam nace de la experiencia laboral del founder como funcionario público en el Ministerio Público Fiscal de la CABA, y de dos TFI desarrollados en una Especialización en Gestión de Tecnología e Innovación (UNSAM) y en una Diplomatura en Criptoeconomía y Derecho (ONG Bitcoin Argentina).
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">📄</div>
+      <h3>TFI — Descentralización del CMU</h3>
+      <p>
+        Trabajo Final de la <strong style="color:var(--text)">Diplomatura en Criptoeconomía y Derecho</strong> (ONG Bitcoin Argentina). Propone la arquitectura técnica para descentralizar el Centro de Monitoreo Urbano mediante IPFS como capa de almacenamiento y ZKsync (Ethereum L2) para pruebas de privacidad (ZK-Proofs) y auditoría on-chain. Analiza los aspectos jurídicos del hash como firma digital avanzada bajo Ley 25.506 y su admisibilidad como prueba judicial.
+      </p>
+      <div class="badge-row">
+        <span class="badge badge-green">IPFS</span>
+        <span class="badge badge-green">ZKsync L2</span>
+        <span class="badge badge-blue">Zero Knowledge</span>
+        <span class="badge badge-blue">Ley 25.506</span>
+        <span class="badge badge-blue">ONG Bitcoin Argentina</span>
+      </div>
+      <a href="TFI Descentralizacion del CMU.pdf" download style="display:inline-flex; align-items:center; gap:0.4rem; margin-top:1rem; padding:0.45rem 0.9rem; background:var(--surface2); border:1px solid var(--border); border-radius:6px; text-decoration:none; color:var(--text); font-size:0.75rem; font-weight:600; transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span>📥</span> Descargar TFI
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <h3>TFI — Modelo de Negocios DeCam</h3>
+      <p>
+        Trabajo Final de la <strong style="color:var(--text)">Especialización en Gestión de Tecnología e Innovación</strong> (UNSAM). Desarrolla el modelo de negocio completo: análisis TAM/SAM/SOM, estructura de ingresos B2C/B2B/B2G, proyección financiera a 18 meses, estrategia go-to-market, protocolo Proof of Justice (PoJ), modelo GovTech SaaS para el Estado y plan de expansión Latam.
+      </p>
+      <div class="badge-row">
+        <span class="badge badge-green">B2C · B2B · B2G</span>
+        <span class="badge badge-green">Proof of Justice</span>
+        <span class="badge badge-blue">GovTech SaaS</span>
+        <span class="badge badge-blue">UNSAM</span>
+      </div>
+      <a href="TFI Modelo de Negocios DeCam.pdf" download style="display:inline-flex; align-items:center; gap:0.4rem; margin-top:1rem; padding:0.45rem 0.9rem; background:var(--surface2); border:1px solid var(--border); border-radius:6px; text-decoration:none; color:var(--text); font-size:0.75rem; font-weight:600; transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span>📥</span> Descargar TFI
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── DEMOS ── -->
+<section id="demos">
+  <p class="section-label">Producto</p>
+  <h2>Demos Interactivos</h2>
+  <p class="section-subtitle">
+    Dos interfaces diseñadas para los dos roles clave del ecosistema DeCam: el ciudadano y el funcionario judicial.
+  </p>
+
+  <div class="demo-grid">
+    <!-- Demo 1: Usuario Final -->
+    <div class="demo-wrap">
+      <div class="demo-header">
+        <div class="demo-dot" style="background:#00e5a0;"></div>
+        <span class="demo-title">App Ciudadano</span>
+        <span class="demo-subtitle">Usuario Final · BYOD</span>
+      </div>
+      <div class="demo-frame-container">
+        <iframe
+          src="Final usuario.html"
+          title="DeCam — App Usuario Final"
+          allow="camera; microphone; geolocation"
+        ></iframe>
+      </div>
+    </div>
+
+    <!-- Demo 2: MPF -->
+    <div class="demo-wrap">
+      <div class="demo-header">
+        <div class="demo-dot" style="background:#00b8ff;"></div>
+        <span class="demo-title">App Poder Judicial</span>
+        <span class="demo-subtitle">Funcionario MPF</span>
+      </div>
+      <div class="demo-frame-container">
+        <iframe
+          src="DeCam Demo MPF.html"
+          title="DeCam — Demo MPF"
+          allow="camera; microphone; geolocation"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── INSTITUCIONAL ── -->
+<section id="institucional">
+  <p class="section-label">Contexto Institucional</p>
+  <h2>El Estado y la Justicia buscan esto</h2>
+  <p class="section-subtitle">
+    Tanto el Gobierno de la Ciudad como el Poder Judicial se encuentran activamente en búsqueda de herramientas tecnológicas descentralizadas. DeCam ya está en ese radar.
+  </p>
+
+  <div style="display:flex; flex-direction:column; gap:1.5rem;">
+
+    <!-- GCBA / TECba -->
+    <div class="institution-card">
+      <div class="institution-logo">🏛️</div>
+      <div class="institution-body">
+        <h3>Gobierno de la Ciudad de Buenos Aires — TECba · Innovación Tecnológica</h3>
+        <p>
+          DeCam fue presentado al equipo de TECba del GCBA, enfocado en innovación tecnológica y transformación digital.
+          Tras varias rondas de presentaciones, el equipo técnico validó el concepto y señaló que para obtener
+          una validación institucional formal el software debe estar completamente desarrollado.
+          El GCBA ya utiliza actualmente tecnología de este tipo: <strong style="color:var(--text)">QuarkID</strong>,
+          una plataforma blockchain para gestionar identidad digital descentralizada, confirma que el Estado es un comprador real de esta categoría.
+        </p>
+        <div class="badge-row">
+          <span class="badge badge-green">Presentación ante GCBA</span>
+          <span class="badge badge-green">Validación de Concepto</span>
+          <span class="badge badge-blue">GCBA usa QuarkID (blockchain)</span>
+          <span class="badge badge-blue">Transformación Digital</span>
+        </div>
+
+        <!-- PDF Downloads TECba -->
+        <p style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--accent); margin-top:1.25rem; margin-bottom:0.75rem;">Documentación técnica del proceso de evaluación</p>
+        <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+          <a href="DeCAM - Observaciones.pdf" download style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.55rem 1rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; text-decoration:none; color:var(--text); font-size:0.8rem; font-weight:600; transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <span style="font-size:1rem;">📄</span>
+            <div>
+              <div>Observaciones TECba</div>
+              <div style="font-size:0.68rem; color:var(--muted); font-weight:400;">Preguntas técnicas del equipo GCBA</div>
+            </div>
+            <span style="color:var(--accent); margin-left:0.25rem;">↓</span>
+          </a>
+          <a href="Respuesta de observaciones TECBA.pdf" download style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.55rem 1rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; text-decoration:none; color:var(--text); font-size:0.8rem; font-weight:600; transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <span style="font-size:1rem;">📋</span>
+            <div>
+              <div>Respuestas DeCam</div>
+              <div style="font-size:0.68rem; color:var(--muted); font-weight:400;">Respuesta técnica, operativa y jurídica</div>
+            </div>
+            <span style="color:var(--accent); margin-left:0.25rem;">↓</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Poder Judicial -->
+    <div class="institution-card">
+      <div class="institution-logo">⚖️</div>
+      <div class="institution-body">
+        <h3>Poder Judicial — Ministerio Público Fiscal · CABA</h3>
+        <p>
+          El founder cuenta con <strong style="color:var(--text)">casi una década de experiencia como funcionario público en el MPF de la CABA</strong> (2009–2018),
+          lo que le permitió entender en profundidad los desafíos que enfrentan los fiscales en sus investigaciones.
+          Esa experiencia directa es la base del diseño de DeCam. Se realizaron entrevistas con fiscales y jueces
+          para validar el flujo de acceso a evidencia, la cadena de custodia digital y la admisibilidad procesal.
+        </p>
+        <!-- Tracción activa -->
+        <div style="margin:1rem 0; background:rgba(0,229,160,0.07); border:1px solid rgba(0,229,160,0.35); border-radius:8px; padding:1rem 1.25rem;">
+          <p style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--accent); margin-bottom:0.5rem;">
+            <span style="display:inline-block; width:8px; height:8px; background:var(--accent); border-radius:50%; margin-right:6px; animation:pulse 2s infinite;"></span>
+            Tracción Activa · Abril 2026
+          </p>
+          <p style="font-size:0.875rem; color:var(--text); margin:0;">
+            Demo funcional entregado al <strong>Fiscal Dr. José Silvie (MPF CABA)</strong>, quien está gestionando su presentación ante el <strong>Fiscal General Dr. Javier Martín López Zavaleta</strong>. Feedback adicional en proceso con ex-colegas activos en fiscalía.
+          </p>
+        </div>
+
+        <p style="margin-top:0.75rem;">
+          El interés institucional del Poder Judicial por herramientas de este tipo es concreto y reciente:
+          el <strong style="color:var(--text)">Consejo de la Magistratura de la CABA dictó la Resolución CM N° 95/2025</strong>
+          (24 de junio de 2025), creando el <em>Comité de Estandarización en Inteligencia Artificial</em>
+          para diseñar, evaluar e implementar nuevas herramientas tecnológicas en el ámbito judicial,
+          con participación del Ministerio Público Fiscal.
+          DeCam está posicionado para presentarse ante este comité.
+        </p>
+        <div class="quote-box">
+          "…resulta conveniente la creación de un Comité de Estandarización en Inteligencia Artificial (IA) con el objetivo de diseñar, proponer, evaluar e intervenir en iniciativas referidas a la estandarización, homologación y/o unificación de propuestas, desarrollos y aplicaciones sobre IA en el ámbito del Poder Judicial de la Ciudad Autónoma de Buenos Aires."
+          <br/><br/><strong style="color:var(--text); font-style:normal;">— Res. CM N° 95/2025 · Consejo de la Magistratura CABA · 24/06/2025</strong>
+        </div>
+        <!-- PDF Download Resolución -->
+        <div style="margin-top:1rem; margin-bottom:1rem;">
+          <a href="Res CM N 0952025.pdf" download style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.55rem 1rem; background:var(--surface2); border:1px solid rgba(0,184,255,0.3); border-radius:8px; text-decoration:none; color:var(--text); font-size:0.8rem; font-weight:600; transition:border-color .2s;" onmouseover="this.style.borderColor='var(--accent2)'" onmouseout="this.style.borderColor='rgba(0,184,255,0.3)'">
+            <span style="font-size:1rem;">⚖️</span>
+            <div>
+              <div>Res. CM N° 95/2025 — Consejo de la Magistratura</div>
+              <div style="font-size:0.68rem; color:var(--muted); font-weight:400;">Creación del Comité de Estandarización en IA · 24/06/2025</div>
+            </div>
+            <span style="color:var(--accent2); margin-left:0.25rem;">↓</span>
+          </a>
+        </div>
+        <div class="badge-row">
+          <span class="badge badge-green">Ex funcionario MPF · 2009–2018</span>
+          <span class="badge badge-green">Entrevistas con fiscales y jueces</span>
+          <span class="badge badge-blue">Res. CM 95/2025 · Comité IA</span>
+          <span class="badge badge-blue">Cadena de Custodia Digital</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── MERCADO ── -->
+<section id="mercado">
+  <p class="section-label">Oportunidad de Mercado</p>
+  <h2>Tamaño de Mercado</h2>
+  <p class="section-subtitle">
+    El mercado de videovigilancia en Latam crece al 12% anual. DeCam apunta al mercado de
+    videovigilancia accesible en el Área Metropolitana de Buenos Aires (AMBA), estimado en
+    4,8 millones de conexiones según el TFI de Descentralización del CMU (UNSAM).
+  </p>
+
+  <div class="market-row" style="margin-bottom:2rem;">
+    <div class="market-bars">
+      <div class="market-bar-item">
+        <div class="market-bar-label">
+          <span class="name">TAM — Latam Total</span>
+          <span class="val">$4.08B</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;"></div></div>
+      </div>
+      <div class="market-bar-item">
+        <div class="market-bar-label">
+          <span class="name">SAM — Videovigilancia AMBA</span>
+          <span class="val">4,8M conexiones (~$403M)</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:10%;"></div></div>
+      </div>
+      <div class="market-bar-item">
+        <div class="market-bar-label">
+          <span class="name">SOM — Argentina (Año 1)</span>
+          <span class="val">$12M</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:3%;"></div></div>
+      </div>
+    </div>
+
+    <div class="revenue-grid">
+      <div class="revenue-card">
+        <div class="rc-name">B2C · BYOD</div>
+        <div class="rc-val">$7 / mes</div>
+      </div>
+      <div class="revenue-card">
+        <div class="rc-name">B2B · Leasing</div>
+        <div class="rc-val">$15 / mes</div>
+      </div>
+      <div class="revenue-card">
+        <div class="rc-name">B2G · SaaS</div>
+        <div class="rc-val">Contrato</div>
+      </div>
+      <div class="revenue-card">
+        <div class="rc-name">NFT Marketplace</div>
+        <div class="rc-val">10% comisión</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Roadmap -->
+  <p class="section-label" style="margin-bottom:1rem;">Hoja de Ruta</p>
+  <div class="roadmap">
+    <div class="roadmap-phase">
+      <div class="phase-num">Fase 01</div>
+      <div class="phase-title">Creación del MVP</div>
+      <div class="phase-period">Meses 1 – 6</div>
+      <ul class="phase-items">
+        <li>Equipo fundador cerrado</li>
+        <li>Desarrollo de red descentralizada</li>
+        <li>Desarrollo de smart contract</li>
+        <li>MVP on-chain en testnet</li>
+        <li>Auditoría y certificación</li>
+      </ul>
+    </div>
+    <div class="roadmap-phase">
+      <div class="phase-num">Fase 02</div>
+      <div class="phase-title">Validación Institucional</div>
+      <div class="phase-period">Meses 6 – 8</div>
+      <ul class="phase-items">
+        <li>Demostrar viabilidad de cadena de custodia criptográfica</li>
+        <li>Presentación al Comité de IA (Res. CM 95/2025)</li>
+        <li>Convenio de Colaboración con MPF</li>
+      </ul>
+    </div>
+    <div class="roadmap-phase">
+      <div class="phase-num">Fase 03</div>
+      <div class="phase-title">Red Atómica</div>
+      <div class="phase-period">Meses 9 – 12</div>
+      <ul class="phase-items">
+        <li>100 nodos en micro-zona piloto</li>
+        <li>Auditoría en tiempo real</li>
+        <li>Primer contrato B2G firmado</li>
+      </ul>
+    </div>
+    <div class="roadmap-phase">
+      <div class="phase-num">Fase 04</div>
+      <div class="phase-title">Lanzamiento Temprano</div>
+      <div class="phase-period">Meses 12+</div>
+      <ul class="phase-items">
+        <li>App móvil en stores</li>
+        <li>NFT Marketplace lanzado</li>
+        <li>Feedback y ajustes</li>
+        <li>Preparación Serie A — expansión nacional</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ── FINANCIACIÓN ── -->
+<section id="financiacion">
+  <p class="section-label">Venture Capital · Ángeles</p>
+  <h2>Financiación Pre-Seed</h2>
+  <p class="section-subtitle">
+    Buscamos $200.000 USD para construir el MVP, cerrar el equipo core y alcanzar el break-even en 18 meses. Instrumento: SAFE estándar YC, adaptado a derecho argentino.
+  </p>
+
+  <div class="invest-grid" style="margin-bottom:2rem;">
+
+    <!-- Columna 1: Ask -->
+    <div class="ask-box">
+      <div class="ask-amount">$200K</div>
+      <div class="ask-label">USD — Ronda Pre-Seed · 2026</div>
+
+      <div class="ask-breakdown">
+        <div class="ask-row">
+          <span class="label">Burn rate</span>
+          <span class="value">~$11.000 / mes</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Runway</span>
+          <span class="value" style="color:var(--accent);font-weight:700;">18 meses</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Break-even</span>
+          <span class="value">Mes 18 · 4.200 nodos</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Captación SAM</span>
+          <span class="value">0,08% para BE</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Ticket mínimo</span>
+          <span class="value">USD $25.000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna 2: Términos SAFE -->
+    <div class="ask-box" style="border-color:rgba(0,184,255,0.3);">
+      <p style="font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--accent2); margin-bottom:1rem;">Términos del SAFE</p>
+      <div class="ask-breakdown">
+        <div class="ask-row">
+          <span class="label">Instrumento</span>
+          <span class="value">SAFE · YC Standard</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Valuation Cap</span>
+          <span class="value" style="color:var(--accent);font-weight:700;">$1.500.000 USD</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Post-money</span>
+          <span class="value">Sí (SAFE post-money)</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Descuento</span>
+          <span class="value">20% sobre próxima ronda</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Cláusula MFN</span>
+          <span class="value" style="color:var(--accent);">✓ Incluida</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Pro-rata rights</span>
+          <span class="value">Para tickets ≥ $50.000</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Conversión automática</span>
+          <span class="value">Equity Financing ≥ $500K</span>
+        </div>
+        <div class="ask-row">
+          <span class="label">Cierre</span>
+          <span class="value">Rolling close · desde hoy</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna 3: Uso de fondos -->
+    <div class="use-of-funds">
+      <p style="font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:1rem;">Uso de Fondos</p>
+      <div class="fund-row">
+        <div class="fund-pct">40%</div>
+        <div class="fund-detail">
+          <div class="fn">Desarrollo de Producto</div>
+          <div class="fd">Smart contracts, app móvil, nodo IPFS, auditoría CertiK/Hacken</div>
+        </div>
+      </div>
+      <div class="fund-row">
+        <div class="fund-pct">25%</div>
+        <div class="fund-detail">
+          <div class="fn">Equipo Core</div>
+          <div class="fd">CTO, dev Web3, dev Full-Stack</div>
+        </div>
+      </div>
+      <div class="fund-row">
+        <div class="fund-pct">20%</div>
+        <div class="fund-detail">
+          <div class="fn">Go-to-Market</div>
+          <div class="fd">Convenio MPF, alianzas municipales, B2C</div>
+        </div>
+      </div>
+      <div class="fund-row">
+        <div class="fund-pct">15%</div>
+        <div class="fund-detail">
+          <div class="fn">Legal &amp; Operaciones</div>
+          <div class="fd">Constitución SAS, SAFE, compliance, infraestructura</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Founder -->
+  <div class="founder-card">
+    <div class="founder-avatar">MC</div>
+    <div>
+      <div class="founder-name">Maximiliano Ceña</div>
+      <div class="founder-role">Founder &amp; CEO — DeCam</div>
+      <p class="founder-bio" style="margin-bottom:0.75rem;">
+        Emprendedor tecnológico con casi una década como funcionario público en el MPF de la CABA (2009–2018).
+        Esa experiencia directa dentro del sistema judicial fue el origen de DeCam: entender en profundidad los desafíos que enfrentan los fiscales en el acceso y preservación de evidencia digital.
+        Abogado (Universidad de Morón), con especializaciones en Derecho Procesal Penal (UNSAM), Criptoeconomía y Derecho (ONG Bitcoin Argentina) e Innovación Tecnológica (UNSAM).
+      </p>
+      <div style="display:flex; flex-direction:column; gap:0.35rem; margin-bottom:0.9rem;">
+        <div style="font-size:0.8rem; color:var(--muted);">▸ <strong style="color:var(--text)">Ex funcionario del MPF</strong> — CABA · 2009–2018</div>
+        <div style="font-size:0.8rem; color:var(--muted);">▸ <strong style="color:var(--text)">Abogado</strong> — Universidad de Morón</div>
+        <div style="font-size:0.8rem; color:var(--muted);">▸ <strong style="color:var(--text)">Diplomatura en Derecho Procesal Penal</strong>, Contravencional y de Faltas — UNSAM</div>
+        <div style="font-size:0.8rem; color:var(--muted);">▸ <strong style="color:var(--text)">Diplomatura en Criptoeconomía y Derecho</strong> — ONG Bitcoin Argentina</div>
+        <div style="font-size:0.8rem; color:var(--muted);">▸ <strong style="color:var(--text)">Especialización en Gestión de Tecnología e Innovación</strong> — UNSAM</div>
+      </div>
+      <div class="badge-row">
+        <span class="badge badge-green">Ex funcionario del MPF · CABA</span>
+        <span class="badge badge-green">Demo entregado al MPF · Abr 2026</span>
+        <span class="badge badge-green">Autor TFI Descentralización del CMU</span>
+        <span class="badge badge-green">Autor TFI Modelo de Negocios DeCam</span>
+        <span class="badge badge-blue">SAFE Pre-Seed · $1.5M Cap</span>
+        <span class="badge badge-blue">IPFS · ZKsync · Proof of Justice</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA Inversión -->
+  <div style="margin-top:2rem; background:var(--surface); border:1px solid rgba(0,229,160,0.2); border-radius:12px; padding:2.5rem; text-align:center;">
+    <p style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--accent); margin-bottom:0.75rem;">¿Te interesa invertir?</p>
+    <h3 style="font-size:1.5rem; font-weight:700; margin-bottom:0.75rem;">Hablemos directamente</h3>
+    <p style="color:var(--muted); font-size:0.9rem; max-width:480px; margin:0 auto 1.5rem;">
+      Estamos en proceso de constitución de la SAS y definición final del SAFE.
+      Agenda una llamada de 30 minutos para revisar los términos y el estado del proyecto.
+    </p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+      <a href="mailto:mc.cena90@gmail.com" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background:var(--accent); color:#000; border-radius:8px; font-weight:700; font-size:0.9rem; text-decoration:none;">
+        Escribir al founder →
+      </a>
+    </div>
+  </div>
+
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p><span>DeCam</span> © 2026 · Maximiliano Ceña · Buenos Aires, Argentina</p>
+  <p style="margin-top:0.35rem;">Videovigilancia descentralizada · IPFS + ZKsync · Blockchain lleva tu Cámara a la Justicia</p>
+</footer>
+
+<script>
+
+  // Active nav link highlight on scroll
+  var sections = document.querySelectorAll('section[id]');
+  var navLinks = document.querySelectorAll('.nav-links a');
+
+  window.addEventListener('scroll', function() {
+    var scrollY = window.scrollY + 80;
+    sections.forEach(function(section) {
+      if (section.offsetTop <= scrollY && section.offsetTop + section.offsetHeight > scrollY) {
+        navLinks.forEach(function(a) {
+          a.style.color = '';
+          a.style.background = '';
+          if (a.getAttribute('href') === '#' + section.id) {
+            a.style.color = 'var(--accent)';
+          }
+        });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

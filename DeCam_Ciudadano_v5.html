@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DeCam — Guardá tu Barrio</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --g:#10B981; --g2:#059669;
+  --bg:#07090D; --c1:#0E1117; --c2:#161B24; --c3:#1E2530;
+  --bdr:rgba(16,185,129,0.15); --bdr2:rgba(255,255,255,0.06);
+  --txt:#EEF2FF; --muted:#6B7280; --dim:#374151;
+  --amber:#F59E0B; --blue:#3B82F6; --red:#EF4444;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Barlow',sans-serif;overflow:hidden}
+
+/* Phone */
+.phone{width:390px;height:844px;background:var(--bg);border-radius:52px;
+  box-shadow:0 0 0 10px #1c1c20,0 30px 80px rgba(0,0,0,.9);
+  position:relative;overflow:hidden;flex-shrink:0}
+.island{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  width:126px;height:34px;background:#000;border-radius:20px;z-index:9999;pointer-events:none}
+
+/* Screens */
+.scr{display:none;position:absolute;inset:0;overflow:hidden}
+/* Scrollable screens — flex so header+scroll work */
+#sw.on,#sciv.on,#sp.on{display:flex!important;flex-direction:column}
+/* Map, camera, onboarding, login — block (children are absolute) */
+#sh.on,#sc.on,#sob.on,#sl.on{display:block!important}
+
+/* Animations */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes ring{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@keyframes ripple{0%{transform:scale(1);opacity:.5}100%{transform:scale(2.8);opacity:0}}
+@keyframes pop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes xpFly{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(-100px) rotate(720deg)}}
+@keyframes scanH{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes stepIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+
+/* ═══════ ONBOARDING ═══════ */
+#sob{ background:var(--bg) }
+.ob-slide{
+  position:absolute;inset:0;
+  background:var(--bg);
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-end;
+  padding:0 32px 56px;
+}
+.ob-slide.on{ display:flex }
+
+/* grid bg — pointer-events:none so it never blocks clicks */
+.ob-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(16,185,129,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(16,185,129,.04) 1px,transparent 1px);
+  background-size:32px 32px;
+  pointer-events:none;
+  z-index:0;
+}
+/* All slide content sits above grid */
+.ob-art{
+  position:absolute;top:0;left:0;right:0;bottom:240px;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+  z-index:1;
+}
+.ob-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--g);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;z-index:2;position:relative}
+.ob-title{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:var(--txt);line-height:1.15;margin-bottom:10px;text-align:center;letter-spacing:.5px;z-index:2;position:relative}
+.ob-body{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;text-align:center;font-weight:300;z-index:2;position:relative}
+.ob-dots{display:flex;gap:6px;justify-content:center;margin-bottom:20px;z-index:2;position:relative}
+.ob-dot{width:6px;height:6px;border-radius:3px;background:var(--dim);transition:all .3s}
+.ob-dot.on{width:20px;background:var(--g)}
+.ob-btn{
+  width:100%;background:var(--g);color:#000;border:none;
+  padding:17px;border-radius:13px;
+  font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;
+  margin-bottom:10px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  position:relative;z-index:2;
+}
+.ob-btn-sec{
+  width:100%;background:none;border:1px solid var(--bdr2);
+  color:var(--muted);padding:14px;border-radius:13px;
+  font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;
+  position:relative;z-index:2;
+}
+
+/* ═══════ LOGIN ═══════ */
+#sl{ background:var(--bg) }
+.lg-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(16,185,129,.12),transparent 70%);pointer-events:none}
+.lg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(16,185,129,.04)1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,.04)1px,transparent 1px);background-size:32px 32px;pointer-events:none}
+.lg-content{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 32px 56px}
+.lg-logo{width:88px;height:88px;border-radius:22px;border:1px solid var(--bdr);background:rgba(16,185,129,.08);display:flex;align-items:center;justify-content:center;margin-bottom:20px;position:relative}
+.lg-logo::after{content:'';position:absolute;inset:-4px;border-radius:26px;border:1px solid rgba(16,185,129,.2);animation:ring 3s ease-in-out infinite;pointer-events:none}
+.lg-title{font-family:'Rajdhani',sans-serif;font-size:40px;font-weight:700;letter-spacing:3px;color:var(--txt);margin-bottom:4px}
+.lg-sub{font-size:10px;letter-spacing:5px;color:var(--g);font-weight:600;text-transform:uppercase;margin-bottom:14px}
+.lg-social{background:rgba(14,17,23,.8);border:1px solid var(--bdr2);border-radius:12px;padding:12px 16px;margin-bottom:26px;display:flex;align-items:center;gap:10px;width:100%}
+.lg-avs{display:flex}
+.lg-av{width:26px;height:26px;border-radius:50%;border:2px solid var(--bg);margin-left:-8px;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.lg-av:first-child{margin-left:0}
+.lg-soctxt{flex:1;font-size:11px;color:var(--muted);line-height:1.4}
+.lg-soctxt strong{color:var(--txt);display:block;font-size:12px;margin-bottom:1px}
+.faceid-btn{width:100%;background:var(--g);color:#000;border:none;padding:18px;border-radius:14px;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px}
+.anon-note{font-size:10px;color:var(--muted);text-align:center;letter-spacing:.5px;line-height:1.6}
+.anon-note span{color:var(--g)}
+
+/* ═══════ BOTTOM NAV ═══════ */
+#nav{
+  display:none;position:absolute;bottom:0;left:0;right:0;height:90px;
+  background:rgba(7,9,13,.97);border-top:1px solid var(--bdr2);
+  backdrop-filter:blur(20px);
+  align-items:flex-start;justify-content:space-around;padding:10px 8px 0;z-index:300
+}
+.nb{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Barlow',sans-serif;font-size:9px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;transition:color .2s;flex:1;padding:4px 0}
+.nb.on{color:var(--g)}
+.nb svg{width:22px;height:22px}
+.nb-rel{position:relative}
+.nb-badge{position:absolute;top:-3px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--red);font-size:7px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+/* REC button */
+.nb-rec-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.nb-rec{width:58px;height:58px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;margin-top:-20px;cursor:pointer;border:none;position:relative;box-shadow:0 0 0 5px rgba(239,68,68,.18)}
+.nb-rec::before{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid rgba(239,68,68,.5);animation:ripple 2s ease-out infinite}
+.nb-rec::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid rgba(239,68,68,.3);animation:ripple 2s ease-out .7s infinite}
+.nb-rec svg{width:24px;height:24px;color:#fff;position:relative;z-index:1}
+.nb-rec-lbl{font-family:'Barlow',sans-serif;font-size:9px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;color:var(--red)}
+
+/* ═══════ HOME / MAP ═══════ */
+#sh{ background:var(--bg) }
+#map{position:absolute;inset:0;z-index:0}
+.map-fade{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(7,9,13,.88) 0%,transparent 38%,transparent 58%,rgba(7,9,13,.92) 100%)}
+.map-top{position:absolute;top:0;left:0;right:0;padding:56px 18px 0;z-index:20;pointer-events:none}
+.map-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.map-brand{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--txt);letter-spacing:1px}
+.map-brand span{color:var(--g);font-weight:400}
+.mpf-pill{display:flex;align-items:center;gap:5px;background:rgba(16,185,129,.08);border:1px solid var(--bdr);border-radius:20px;padding:5px 11px;font-size:10px;color:var(--g);font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
+.mpf-dot{width:5px;height:5px;border-radius:50%;background:var(--g);animation:blink 1.5s ease-in-out infinite;flex-shrink:0}
+.map-row2{display:flex;gap:8px}
+.hud-chip{flex:1;background:rgba(7,9,13,.88);border:1px solid var(--bdr2);border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:8px;backdrop-filter:blur(10px)}
+.chip-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chip-n{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--txt);line-height:1}
+.chip-l{font-size:9px;color:var(--muted);margin-top:1px;text-transform:uppercase;letter-spacing:.3px}
+/* Alert feed */
+.alert-feed{position:absolute;bottom:100px;left:16px;right:16px;z-index:20;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.af{background:rgba(7,9,13,.9);border:1px solid var(--bdr2);border-radius:12px;padding:10px 13px;display:flex;align-items:center;gap:9px;backdrop-filter:blur(10px)}
+.af.urg{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.06)}
+.af.ok{border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.04)}
+.af-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.af-dot-r{background:var(--red);animation:blink .8s ease-in-out infinite}
+.af-dot-a{background:var(--amber);animation:blink 1.5s ease-in-out infinite}
+.af-dot-g{background:var(--g)}
+.af-txt{flex:1;font-size:11px;color:var(--txt);line-height:1.3}
+.af-time{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);flex-shrink:0}
+
+/* ═══════ CAMERA ═══════ */
+#sc{ background:#000 }
+.cam-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cam-scanlines{position:absolute;inset:0;background:repeating-linear-gradient(transparent,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:10}
+.cam-scan-h{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(16,185,129,.7),transparent);animation:scanH 3s linear infinite;z-index:11;pointer-events:none}
+.cam-corners{position:absolute;inset:0;z-index:20;pointer-events:none}
+.cam-c{position:absolute;width:20px;height:20px;border-color:var(--g);border-style:solid;border-width:0}
+.cam-c.tl{top:80px;left:24px;border-top-width:2px;border-left-width:2px}
+.cam-c.tr{top:80px;right:24px;border-top-width:2px;border-right-width:2px}
+.cam-c.bl{bottom:158px;left:24px;border-bottom-width:2px;border-left-width:2px}
+.cam-c.br{bottom:158px;right:24px;border-bottom-width:2px;border-right-width:2px}
+.cam-info-top{position:absolute;top:56px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:flex-start;z-index:21;pointer-events:none}
+.rec-badge{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#fff}
+.rec-dot-anim{width:8px;height:8px;border-radius:50%;background:var(--red);animation:blink .8s ease-in-out infinite}
+.cam-timer-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--red);margin-top:2px}
+.cam-node{font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.55);text-align:right;line-height:1.7}
+.cam-zkproof{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);background:rgba(16,185,129,.15);border:1px solid var(--g);border-radius:8px;padding:4px 12px;font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--g);letter-spacing:1px;white-space:nowrap;z-index:20;animation:blink 2s ease-in-out infinite;pointer-events:none}
+.cam-bottom{position:absolute;bottom:0;left:0;right:0;padding:0 32px 48px;display:flex;justify-content:center;align-items:center;z-index:20;gap:32px}
+.cam-side{width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.stop-btn{width:72px;height:72px;border-radius:50%;border:4px solid rgba(255,255,255,.9);background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.stop-inner{width:24px;height:24px;background:var(--red);border-radius:4px}
+
+/* ═══════ CEREMONY ═══════ */
+#ceremony{
+  display:none;position:absolute;inset:0;
+  background:var(--bg);z-index:600;
+  flex-direction:column;justify-content:center;align-items:center;padding:40px 36px;
+}
+.cer-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(16,185,129,.03)1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,.03)1px,transparent 1px);background-size:32px 32px;pointer-events:none}
+.cer-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--txt);margin-bottom:4px;letter-spacing:1px;text-align:center;position:relative;z-index:2}
+.cer-sub{font-size:12px;color:var(--muted);margin-bottom:28px;text-align:center;position:relative;z-index:2}
+.cer-steps{width:100%;position:relative;z-index:2;margin-bottom:20px}
+.cer-step{display:flex;align-items:flex-start;gap:14px;padding:10px 0;opacity:.2;transition:opacity .4s;border-top:.5px solid rgba(255,255,255,.05)}
+.cer-step:first-child{border-top:none;padding-top:0}
+.cer-step.active{opacity:1;animation:stepIn .3s ease-out}
+.cer-step.done{opacity:.65}
+.cs-num{width:28px;height:28px;border-radius:50%;background:var(--c2);border:1px solid var(--bdr2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);transition:all .4s;margin-top:1px}
+.cer-step.active .cs-num{background:rgba(16,185,129,.15);border-color:var(--g);color:var(--g)}
+.cer-step.done .cs-num{background:rgba(16,185,129,.12);border-color:var(--g);color:var(--g)}
+.cs-body{flex:1}
+.cs-main{font-size:13px;color:var(--txt);font-weight:500;line-height:1.3}
+.cs-last .cs-main{font-size:14px;font-weight:700;color:var(--g)}
+.cs-sub{font-size:10px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.cer-bar-bg{width:100%;height:3px;background:var(--c3);border-radius:2px;overflow:hidden;margin-bottom:16px;position:relative;z-index:2}
+.cer-bar{height:100%;background:linear-gradient(90deg,var(--g),var(--g2));width:0;transition:width .5s ease;border-radius:2px}
+.cer-hash{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);text-align:center;word-break:break-all;max-width:280px;position:relative;z-index:2;line-height:1.6}
+
+/* ═══════ SUCCESS ═══════ */
+#suc-overlay{
+  display:none;position:absolute;inset:0;
+  background:rgba(7,9,13,.97);z-index:700;
+  flex-direction:column;justify-content:center;align-items:center;padding:28px;
+}
+.suc-particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.suc-p{position:absolute;width:7px;height:7px;border-radius:2px;animation:confettiFall 1.8s ease-out both}
+.suc-xp-fly{position:absolute;top:180px;right:80px;font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;color:var(--amber);animation:xpFly 1.6s ease-out .4s both;z-index:2;pointer-events:none}
+.suc-icon{width:84px;height:84px;border-radius:50%;background:rgba(16,185,129,.12);border:1px solid var(--g);display:flex;align-items:center;justify-content:center;margin-bottom:16px;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both;position:relative;z-index:1}
+.suc-title{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--txt);margin-bottom:6px;text-align:center;letter-spacing:1px;position:relative;z-index:1}
+.suc-sub{font-size:12px;color:var(--muted);text-align:center;line-height:1.5;margin-bottom:20px;position:relative;z-index:1}
+.suc-card{width:100%;background:var(--c1);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;margin-bottom:12px;position:relative;z-index:1}
+.suc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:.5px solid var(--bdr2)}
+.suc-row:first-child{border-top:none;padding-top:0}
+.suc-row label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.suc-row value{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--g);max-width:200px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.suc-rank-card{width:100%;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px 14px;margin-bottom:16px;position:relative;z-index:1}
+.suc-rank-lbl{font-size:9px;font-weight:600;color:var(--amber);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.suc-rank-bar-bg{height:7px;background:var(--c3);border-radius:4px;overflow:hidden;margin-bottom:5px}
+.suc-rank-bar{height:100%;background:linear-gradient(90deg,var(--amber),#FFD060);border-radius:4px;transition:width 1.4s ease}
+.suc-rank-info{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.suc-rank-info span:last-child{color:var(--amber);font-weight:600}
+.suc-close{width:100%;background:var(--g);color:#000;border:none;padding:15px;border-radius:12px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;position:relative;z-index:1}
+
+/* ═══════ MIS APORTES ═══════ */
+#sw{ background:var(--bg) }
+.scr-hdr{flex-shrink:0;padding:56px 20px 16px;flex-shrink:0}
+.scr-title{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--txt);letter-spacing:1px}
+.wallet-balance{flex-shrink:0;background:linear-gradient(135deg,var(--c2),var(--c1));border:1px solid var(--bdr);border-radius:18px;padding:18px 20px;margin:0 20px 16px;display:flex;justify-content:space-between;align-items:center}
+.bal-left label{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px}
+.bal-left value{font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;color:var(--txt)}
+.bal-left small{font-size:10px;color:var(--muted)}
+.bal-right{text-align:right}
+.bal-right label{font-size:9px;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:4px}
+.bal-right value{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--g)}
+.seg-tabs{flex-shrink:0;display:flex;background:var(--c1);border-radius:12px;padding:3px;margin:0 20px 16px;position:relative}
+.seg-bg{position:absolute;top:3px;height:calc(100% - 6px);background:var(--c3);border-radius:10px;transition:all .25s ease;border:1px solid var(--bdr2)}
+.seg-tab{flex:1;padding:8px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;position:relative;z-index:2;transition:color .2s;font-family:'Barlow',sans-serif;text-align:center}
+.seg-tab.on{color:var(--txt)}
+.scroll{flex:1;overflow-y:auto;padding:0 20px 100px;position:relative}
+.scroll::-webkit-scrollbar{display:none}
+.nft-card{background:var(--c1);border:1px solid var(--bdr2);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.nft-card.mine{border-color:rgba(16,185,129,.22)}
+.nft-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px}
+.nft-meta label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--g);display:block;margin-bottom:2px}
+.nft-meta h4{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:2px}
+.nft-meta p{font-size:10px;color:var(--muted)}
+.nft-status{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.nft-btn{background:var(--c2);border:1px solid var(--bdr2);color:var(--txt);padding:6px 12px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif}
+.sec-lbl{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;margin-top:16px;display:block}
+.expiry-pill{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:4px 8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--amber);text-align:right;line-height:1.4}
+.dev-card{background:var(--c1);border:1px solid var(--bdr2);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.dev-ico{width:44px;height:44px;border-radius:12px;background:rgba(16,185,129,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dev-ico svg{width:20px;height:20px;color:var(--g)}
+.dev-name{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:2px}
+.dev-id{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted)}
+.dev-live{font-size:9px;font-weight:700;color:var(--g);display:flex;align-items:center;gap:4px;margin-top:2px}
+.dev-live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--g);animation:blink 1.5s ease-in-out infinite}
+
+/* ═══════ MI IMPACTO ═══════ */
+#sciv{ background:var(--bg) }
+.rank-hero{background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(5,150,105,.05));border:1px solid var(--bdr);border-radius:20px;padding:18px 20px;margin-bottom:14px}
+.rank-hero-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.rank-badge-big{width:54px;height:54px;border-radius:16px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.rank-hero-info{flex:1}
+.rank-hero-name{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--txt);letter-spacing:.5px;margin-bottom:2px}
+.rank-hero-level{font-size:11px;color:var(--amber);font-weight:600}
+.rank-xp{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.rank-xp strong{color:var(--txt)}
+.rank-bar-bg{height:10px;background:var(--c3);border-radius:5px;overflow:hidden;margin-bottom:5px}
+.rank-bar-fill{height:100%;background:linear-gradient(90deg,var(--amber),#FFD060);border-radius:5px;transition:width 1.2s ease}
+.rank-bar-lbls{display:flex;justify-content:space-between;font-size:9px;color:var(--muted)}
+.rank-bar-lbls span:last-child{color:var(--amber);font-weight:600}
+.rank-tiers{display:flex;gap:4px;margin-top:12px}
+.tier{flex:1;text-align:center;font-size:8px;color:var(--muted);padding:5px 0;border-radius:6px;border:1px solid var(--bdr2)}
+.tier.done{background:rgba(16,185,129,.08);border-color:var(--bdr);color:var(--g);font-weight:600}
+.tier.curr{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--amber);font-weight:700}
+/* Streak */
+.streak-card{background:var(--c1);border:1px solid var(--bdr2);border-radius:18px;padding:16px 18px;margin-bottom:14px}
+.streak-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.streak-num{font-family:'Rajdhani',sans-serif;font-size:40px;font-weight:700;color:var(--red);line-height:1}
+.streak-lbl{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.streak-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.sd{height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--muted)}
+.sd.done{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.sd.today{background:var(--red);color:#fff}
+.sd.miss{background:var(--c2);color:var(--dim)}
+/* Stats */
+.stats4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.s4{background:var(--c1);border:1px solid var(--bdr2);border-radius:14px;padding:14px}
+.s4.hi{border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.04)}
+.s4-n{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--txt);line-height:1}
+.s4-n.g{color:var(--g)}
+.s4-l{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3}
+/* Medals */
+.medals-title{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;margin-top:4px}
+.medals-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.medal{background:var(--c1);border:1px solid var(--bdr2);border-radius:13px;padding:12px 6px;text-align:center}
+.medal.earned{border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.03)}
+.medal.locked{opacity:.35}
+.medal-icon{font-size:22px;margin-bottom:4px}
+.medal-name{font-size:8px;font-weight:600;color:var(--txt);display:block;line-height:1.3}
+.medal-desc{font-size:7px;color:var(--muted);margin-top:1px}
+/* LB */
+.lb-title{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.rank-item{background:var(--c1);border:1px solid var(--bdr2);border-radius:12px;padding:11px 14px;margin-bottom:7px;display:flex;align-items:center;gap:12px}
+.rank-me{border-color:var(--bdr);background:rgba(16,185,129,.03)}
+.rank-pos{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--dim);width:24px;text-align:center}
+.rank-pos.gold{color:#FFD700}.rank-pos.silver{color:#C0C0C0}.rank-pos.bronze{color:#CD7F32}
+.rank-avatar{width:34px;height:34px;border-radius:50%;background:var(--c3);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.rank-info{flex:1}
+.rank-name{font-size:12px;font-weight:600;color:var(--txt)}
+.rank-score{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted)}
+.rank-nfts{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--g);font-weight:700}
+
+/* ═══════ PERFIL ═══════ */
+#sp{ background:var(--bg) }
+.prof-hdr{flex-shrink:0}
+.prof-av{width:64px;height:64px;border-radius:20px;background:rgba(16,185,129,.1);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.prof-name{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--txt);letter-spacing:1px}
+.prof-anon{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px}
+.priv-section{background:rgba(16,185,129,.04);border:1px solid var(--bdr);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.priv-section-title{font-size:9px;font-weight:700;color:var(--g);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.priv-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-top:.5px solid rgba(255,255,255,.05)}
+.priv-row:first-of-type{border-top:none;padding-top:0}
+.priv-row-txt{flex:1;margin-right:14px}
+.priv-row-lbl{font-size:12px;color:var(--txt);font-weight:500;display:block}
+.priv-row-sub{font-size:10px;color:var(--muted);margin-top:1px;line-height:1.4}
+.toggle{width:42px;height:24px;border-radius:12px;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.toggle.on{background:var(--g)}.toggle.off{background:var(--c3)}
+.toggle-knob{position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.toggle.on .toggle-knob{left:21px}.toggle.off .toggle-knob{left:3px}
+.install-card{background:var(--c1);border:1px solid var(--bdr2);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer}
+.install-card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.ic-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ic-ico svg{width:20px;height:20px}
+.ic-title{font-size:13px;font-weight:600;color:var(--txt)}
+.ic-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.settings-block{background:var(--c1);border:1px solid var(--bdr2);border-radius:14px;overflow:hidden;margin-bottom:10px}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border-top:.5px solid var(--bdr2)}
+.settings-row:first-child{border-top:none}
+.settings-row span{font-size:13px;color:var(--txt)}
+
+/* ═══════ MODALS ═══════ */
+.modal-overlay{display:none;position:absolute;inset:0;background:rgba(7,9,13,.96);z-index:800;flex-direction:column;justify-content:flex-end}
+.modal-sheet{background:var(--c1);border-radius:24px 24px 0 0;border-top:1px solid var(--bdr2);padding:24px 24px 48px;max-height:85%;overflow-y:auto}
+.modal-sheet::-webkit-scrollbar{display:none}
+.modal-handle{width:36px;height:3px;background:var(--dim);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--txt);letter-spacing:1px;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:5px;font-weight:600}
+.form-group input,.form-group select{width:100%;background:var(--c2);border:1px solid var(--bdr2);padding:12px 14px;border-radius:10px;color:var(--txt);font-size:13px;font-family:'Barlow',sans-serif;outline:none}
+.form-group input::placeholder{color:var(--dim)}
+.form-group select option{background:var(--c2);color:var(--txt)}
+.modal-btn{width:100%;background:var(--g);color:#000;border:none;padding:15px;border-radius:12px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:8px}
+.modal-close{width:100%;background:none;border:1px solid var(--bdr2);color:var(--muted);padding:12px;border-radius:12px;font-size:13px;cursor:pointer;margin-top:8px;font-family:'Barlow',sans-serif}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="island"></div>
+
+  <!-- ════════ ONBOARDING ════════ -->
+  <div id="sob" class="scr on">
+
+    <!-- SLIDE 0 -->
+    <div class="ob-slide on" id="ob-s0">
+      <div class="ob-grid"></div>
+      <div class="ob-art">
+        <div style="position:relative;width:280px;height:180px;display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;left:20px;width:70px;height:70px;border-radius:18px;border:1px solid rgba(16,185,129,.2);background:rgba(16,185,129,.08);display:flex;align-items:center;justify-content:center">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.5"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+          </div>
+          <div style="position:absolute;left:94px;right:94px;top:50%;height:1px;background:linear-gradient(90deg,rgba(16,185,129,.6),rgba(245,158,11,.4),rgba(16,185,129,.6));animation:blink 2s ease-in-out infinite"></div>
+          <div style="position:absolute;top:calc(50% - 4px);left:calc(50% - 20px);width:8px;height:8px;border-radius:50%;background:var(--g);opacity:.7;animation:blink 1.5s .3s infinite"></div>
+          <div style="position:absolute;top:calc(50% - 4px);left:50%;width:8px;height:8px;border-radius:50%;background:var(--amber);opacity:.7;animation:blink 1.5s .6s infinite"></div>
+          <div style="position:absolute;top:calc(50% - 4px);left:calc(50% + 20px);width:8px;height:8px;border-radius:50%;background:var(--g);opacity:.7;animation:blink 1.5s .9s infinite"></div>
+          <div style="position:absolute;right:16px">
+            <svg width="54" height="60" viewBox="0 0 54 60" fill="none">
+              <path d="M27 4L50 14V32C50 45 40 54 27 58C14 54 4 45 4 32V14L27 4Z" fill="rgba(16,185,129,.1)" stroke="rgba(16,185,129,.4)" stroke-width="1.5"/>
+              <path d="M18 30L23 35L36 22" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="ob-num">01 — 02</div>
+      <h2 class="ob-title">Tu cámara puede<br>cerrar un caso criminal.</h2>
+      <p class="ob-body">Conectá lo que ya tenés a la red más segura de videovigilancia ciudadana. Automático, privado, legal.</p>
+      <div class="ob-dots"><div class="ob-dot on"></div><div class="ob-dot"></div></div>
+      <button class="ob-btn" id="ob-next-0">Siguiente <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+    </div>
+
+    <!-- SLIDE 1 -->
+    <div class="ob-slide" id="ob-s1">
+      <div class="ob-grid"></div>
+      <div class="ob-art">
+        <div style="position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center">
+          <svg width="110" height="126" viewBox="0 0 110 126" fill="none">
+            <path d="M55 6L100 24V62C100 88 80 108 55 118C30 108 10 88 10 62V24L55 6Z" fill="rgba(16,185,129,.08)" stroke="rgba(16,185,129,.3)" stroke-width="1.5"/>
+            <circle cx="55" cy="50" r="12" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.15)" stroke-width="1"/>
+            <path d="M45 80C45 72 49 68 55 68C61 68 65 72 65 80" stroke="rgba(255,255,255,.15)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <line x1="42" y1="38" x2="68" y2="82" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+            <line x1="68" y1="38" x2="42" y2="82" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+          </svg>
+          <div style="position:absolute;width:160px;height:160px;border-radius:50%;border:1px dashed rgba(16,185,129,.1)"></div>
+          <div style="position:absolute;top:10px;left:50%;width:7px;height:7px;border-radius:50%;background:var(--g);opacity:.6;animation:blink 2s infinite"></div>
+          <div style="position:absolute;bottom:10px;right:22px;width:5px;height:5px;border-radius:50%;background:var(--g);opacity:.4;animation:blink 2s .7s infinite"></div>
+        </div>
+      </div>
+      <div class="ob-num">02 — 02</div>
+      <h2 class="ob-title">Nadie sabe quién sos.<br>Ni siquiera nosotros.</h2>
+      <p class="ob-body">Cifrado matemático. No es una promesa — es una imposibilidad técnica. Tu nombre y domicilio nunca se revelan.</p>
+      <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot on"></div></div>
+      <button class="ob-btn" id="ob-next-1">Entrar a la red <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+    </div>
+
+    
+    </div><!-- /sob -->
+
+  <!-- ════════ LOGIN ════════ -->
+  <div id="sl" class="scr">
+    <div class="lg-bg"></div>
+    <div class="lg-grid"></div>
+    <div class="lg-content">
+      <div class="lg-logo">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+          <path d="M22 3L40 11V25C40 36 32 42 22 45C12 42 4 36 4 25V11L22 3Z" fill="rgba(16,185,129,.12)" stroke="rgba(16,185,129,.4)" stroke-width="1.5"/>
+          <path d="M14 22L19 27L30 16" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="lg-title">DeCam</div>
+      <div class="lg-sub">Red Ciudadana de Justicia</div>
+      <div class="lg-social">
+        <div class="lg-avs">
+          <div class="lg-av" style="background:rgba(16,185,129,.18);color:var(--g)">MR</div>
+          <div class="lg-av" style="background:rgba(245,158,11,.18);color:var(--amber)">KL</div>
+          <div class="lg-av" style="background:rgba(59,130,246,.18);color:var(--blue)">+8</div>
+        </div>
+        <div class="lg-soctxt">
+          <strong>847 guardianes activos · Palermo</strong>
+          3 casos resueltos esta semana
+        </div>
+      </div>
+      <button class="faceid-btn" id="btn-login">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+        Entrar con Face ID
+      </button>
+      <div class="anon-note">Tu identidad está protegida matemáticamente.<br><span>Nadie sabe quién sos — ni DeCam.</span></div>
+    </div>
+  </div>
+
+  <!-- ════════ HOME ════════ -->
+  <div id="sh" class="scr">
+    <div id="map"></div>
+    <div class="map-fade"></div>
+    <div class="map-top">
+      <div class="map-row1">
+        <div class="map-brand">De<span>Cam</span></div>
+        <div class="mpf-pill"><div class="mpf-dot"></div>MPF CABA — Conectado</div>
+      </div>
+      <div class="map-row2">
+        <div class="hud-chip">
+          <div class="chip-ico" style="background:rgba(239,68,68,.12)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF5F4A" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="rgba(255,95,74,.3)"/></svg>
+          </div>
+          <div><div class="chip-n" style="color:#FF5F4A">12</div><div class="chip-l">días racha</div></div>
+        </div>
+        <div class="hud-chip">
+          <div class="chip-ico" style="background:rgba(16,185,129,.12)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div><div class="chip-n">3</div><div class="chip-l">casos</div></div>
+        </div>
+        <div class="hud-chip">
+          <div class="chip-ico" style="background:rgba(245,158,11,.12)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="rgba(245,158,11,.2)"/></svg>
+          </div>
+          <div><div class="chip-n" style="color:var(--amber)">147</div><div class="chip-l">XP</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="alert-feed">
+      <div class="af urg"><div class="af-dot af-dot-r"></div><div class="af-txt">Alerta activa — Thames y Santa Fe</div><div class="af-time">hace 3m</div></div>
+      <div class="af"><div class="af-dot af-dot-a"></div><div class="af-txt">Nodo #DCM-0041 sellando en tu zona</div><div class="af-time">ahora</div></div>
+      <div class="af ok"><div class="af-dot af-dot-g"></div><div class="af-txt">Caso MPF-2841 cerrado — 2 vecinos ayudaron</div><div class="af-time">hace 1h</div></div>
+    </div>
+  </div>
+
+  <!-- ════════ CAMERA ════════ -->
+  <div id="sc" class="scr">
+    <video id="cam-vid" class="cam-video" muted playsinline>
+      <source src="https://raw.githubusercontent.com/mcenadecam/DeCam-Ri-a/main/beec21214f2fb75ad35c8a3bb07ded150f00c2cb.MP4" type="video/mp4">
+    </video>
+    <div class="cam-scanlines"></div>
+    <div class="cam-scan-h"></div>
+    <div class="cam-corners">
+      <div class="cam-c tl"></div><div class="cam-c tr"></div>
+      <div class="cam-c bl"></div><div class="cam-c br"></div>
+    </div>
+    <div class="cam-info-top">
+      <div>
+        <div class="rec-badge"><div class="rec-dot-anim"></div>REC</div>
+        <div class="cam-timer-val" id="cam-timer">00:00</div>
+      </div>
+      <div class="cam-node">CAM-01<br>PALERMO<br><span style="color:var(--g)">GPS: CIFRADO</span></div>
+    </div>
+    <div class="cam-zkproof">ZK-PROOF ACTIVO · SELLANDO EVIDENCIA</div>
+    <div class="cam-bottom">
+      <div class="cam-side">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </div>
+      <div class="stop-btn" id="btn-stop-cam"><div class="stop-inner"></div></div>
+      <div class="cam-side">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ CEREMONY ════════ -->
+  <div id="ceremony">
+    <div class="cer-grid"></div>
+    <div class="cer-title">Blindando tu evidencia</div>
+    <div class="cer-sub">Ningún humano puede alterar lo que grabaste.</div>
+    <div class="cer-steps">
+      <div class="cer-step" id="cs0"><div class="cs-num">1</div><div class="cs-body"><div class="cs-main">Material fílmico capturado</div><div class="cs-sub">Archivo asegurado en el dispositivo</div></div></div>
+      <div class="cer-step" id="cs1"><div class="cs-num">2</div><div class="cs-body"><div class="cs-main">Firmando con huella criptográfica única</div><div class="cs-sub" id="cer-hash-preview"></div></div></div>
+      <div class="cer-step" id="cs2"><div class="cs-num">3</div><div class="cs-body"><div class="cs-main">Ocultando tu identidad con ZK-Proof</div><div class="cs-sub">Matemáticamente irrastreable</div></div></div>
+      <div class="cer-step" id="cs3"><div class="cs-num">4</div><div class="cs-body"><div class="cs-main">Subiendo a red IPFS descentralizada</div><div class="cs-sub">Sin servidores centrales</div></div></div>
+      <div class="cer-step" id="cs4"><div class="cs-num">5</div><div class="cs-body"><div class="cs-main">Registrando en cadena blockchain</div><div class="cs-sub">Ethereum L2 — sellado para siempre</div></div></div>
+      <div class="cer-step cs-last" id="cs5"><div class="cs-num">6</div><div class="cs-body"><div class="cs-main">Material disponible para la Justicia · Inmutabilidad garantizada</div><div class="cs-sub">El fiscal puede solicitar acceso. Tu identidad sigue protegida.</div></div></div>
+    </div>
+    <div class="cer-bar-bg"><div class="cer-bar" id="cer-bar"></div></div>
+    <div class="cer-hash" id="cer-hash-display"></div>
+  </div>
+
+  <!-- ════════ SUCCESS ════════ -->
+  <div id="suc-overlay">
+    <div class="suc-particles" id="suc-particles"></div>
+    <div class="suc-xp-fly">+50 XP</div>
+    <div class="suc-icon">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="suc-title">EVIDENCIA SELLADA</div>
+    <div class="suc-sub">Tu video está protegido y disponible para el Fiscal.<br>Tu identidad nunca fue revelada.</div>
+    <div class="suc-card">
+      <div class="suc-row"><label>Registrado</label><value id="suc-time">—</value></div>
+      <div class="suc-row"><label>Estado</label><value>Sellado · Solo el fiscal puede verlo</value></div>
+      <div class="suc-row"><label>Identidad</label><value>Oculta — no aparecés en ningún registro</value></div>
+      <div class="suc-row"><label>Hash</label><value id="suc-hash">—</value></div>
+    </div>
+    <div class="suc-rank-card">
+      <div class="suc-rank-lbl">★ Guardián II — Subiendo de rango</div>
+      <div class="suc-rank-bar-bg"><div class="suc-rank-bar" id="suc-rbar" style="width:0%"></div></div>
+      <div class="suc-rank-info"><span>147 → 197 XP</span><span>Centinela en 103 XP más →</span></div>
+    </div>
+    <button class="suc-close" id="btn-suc-close">Entendido</button>
+  </div>
+
+  <!-- ════════ MIS APORTES ════════ -->
+  <div id="sw" class="scr">
+    <div class="scr-hdr"><div class="scr-title">Mis Aportes</div></div>
+    <div class="wallet-balance">
+      <div class="bal-left"><label>Tokens de Justicia</label><value>3</value><small>≈ USD 42</small></div>
+      <div class="bal-right"><label>Dirección anónima</label><value>0x3f…8b2a</value></div>
+    </div>
+    <div class="seg-tabs">
+      <div class="seg-bg" id="seg-bg" style="width:calc(50% - 4px);left:3px"></div>
+      <button class="seg-tab on" id="tab-mine">Mi Evidencia</button>
+      <button class="seg-tab" id="tab-market">Mercado</button>
+    </div>
+    <div class="scroll" id="view-mine">
+      <span class="sec-lbl">Cámara activa</span>
+      <div class="dev-card">
+        <div class="dev-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+        <div><div class="dev-name">Balcón Norte — Palermo</div><div class="dev-id">ID: #A45-PRIVADO · IPFS activo</div><div class="dev-live">Sellando en tiempo real</div></div>
+      </div>
+      <span class="sec-lbl">Evidencia generada</span>
+      <div class="nft-card mine">
+        <div style="display:flex;align-items:center;flex:1"><div class="nft-ico" style="background:rgba(16,185,129,.1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div class="nft-meta"><label>17/03/2026 — 10:15hs</label><h4>Grabación Forense #8</h4><p>Av. Santa Fe 3200</p></div></div>
+        <div class="expiry-pill">Expira<br>en 30d</div>
+      </div>
+      <div class="nft-card mine">
+        <div style="display:flex;align-items:center;flex:1"><div class="nft-ico" style="background:rgba(245,158,11,.1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="nft-meta"><label>TOKEN · CAUSA MPF-4581</label><h4>Token de Justicia #3</h4><p>Validado por Fiscal · Recoleta</p></div></div>
+        <div class="nft-status" style="color:var(--g)">Emitido</div>
+      </div>
+    </div>
+    <div class="scroll" id="view-market" style="display:none">
+      <div style="background:rgba(16,185,129,.04);border:1px solid var(--bdr);border-radius:12px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--muted);line-height:1.5">Víctimas, ONGs y empresas pueden comprar tus tokens para recompensarte de forma anónima.</div>
+      <div class="nft-card"><div style="display:flex;align-items:center;flex:1"><div class="nft-ico" style="background:rgba(139,92,246,.1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="nft-meta"><label>CAUSA 23.230/2024</label><h4>Lesiones Leves</h4><p>Palermo — ONG BarrioSeguro</p></div></div><button class="nft-btn" id="btn-ofertar-1">Ofertar</button></div>
+      <div class="nft-card"><div style="display:flex;align-items:center;flex:1"><div class="nft-ico" style="background:rgba(239,68,68,.1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="nft-meta"><label>CAUSA 14.102/2025</label><h4>Robo Agravado</h4><p>Recoleta — Víctima directa</p></div></div><button class="nft-btn" id="btn-ofertar-2">Ofertar</button></div>
+    </div>
+  </div>
+
+  <!-- ════════ MI IMPACTO ════════ -->
+  <div id="sciv" class="scr">
+    <div class="scr-hdr"><div class="scr-title">Mi Impacto</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Tu historia como guardián del barrio</div></div>
+    <div class="scroll">
+      <div class="rank-hero">
+        <div class="rank-hero-top">
+          <div class="rank-badge-big">🛡️</div>
+          <div class="rank-hero-info"><div class="rank-hero-name">Guardián de Barrio</div><div class="rank-hero-level">Nivel 2 — 147 XP acumulados</div></div>
+          <div class="rank-xp"><strong>+50</strong> XP<br>esta semana</div>
+        </div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" id="rank-bar" style="width:0%"></div></div>
+        <div class="rank-bar-lbls"><span>Guardián II</span><span>Centinela en 103 XP →</span></div>
+        <div class="rank-tiers">
+          <div class="tier done">Vecino</div>
+          <div class="tier done">Guardián</div>
+          <div class="tier curr">Centinela</div>
+          <div class="tier">Defensor</div>
+          <div class="tier">Custodio</div>
+          <div class="tier">Leyenda</div>
+        </div>
+      </div>
+      <div class="streak-card">
+        <div class="streak-top"><div><div class="streak-num">12</div><div class="streak-lbl">días de racha activa</div></div><div style="font-size:30px">🔥</div></div>
+        <div class="streak-days" id="streak-days"></div>
+      </div>
+      <div class="stats4">
+        <div class="s4 hi"><div class="s4-n g">3</div><div class="s4-l">Casos resueltos con tu evidencia</div></div>
+        <div class="s4"><div class="s4-n">18</div><div class="s4-l">Videos sellados disponibles</div></div>
+        <div class="s4"><div class="s4-n">847m</div><div class="s4-l">Radio de cobertura activa</div></div>
+        <div class="s4 hi"><div class="s4-n g">0</div><div class="s4-l">Veces que se reveló tu identidad</div></div>
+      </div>
+      <div class="medals-title">Logros</div>
+      <div class="medals-grid">
+        <div class="medal earned"><div class="medal-icon">🏅</div><div class="medal-name">Primer caso</div><div class="medal-desc">Evidencia usada</div></div>
+        <div class="medal earned"><div class="medal-icon">🔒</div><div class="medal-name">100% anónimo</div><div class="medal-desc">30 días activo</div></div>
+        <div class="medal earned"><div class="medal-icon">⚡</div><div class="medal-name">Flagrancia</div><div class="medal-desc">Respuesta &lt;5min</div></div>
+        <div class="medal earned"><div class="medal-icon">🔥</div><div class="medal-name">Racha 10</div><div class="medal-desc">10 días seguidos</div></div>
+        <div class="medal locked"><div class="medal-icon">🌟</div><div class="medal-name">Guardián Elite</div><div class="medal-desc">10 casos</div></div>
+        <div class="medal locked"><div class="medal-icon">🏙️</div><div class="medal-name">Red de Barrio</div><div class="medal-desc">5 vecinos</div></div>
+        <div class="medal locked"><div class="medal-icon">🤝</div><div class="medal-name">Aliado MPF</div><div class="medal-desc">20 casos</div></div>
+        <div class="medal locked"><div class="medal-icon">👑</div><div class="medal-name">Leyenda</div><div class="medal-desc">1.000 XP</div></div>
+      </div>
+      <div class="lb-title">Ranking barrial — Palermo</div>
+      <div class="rank-item"><div class="rank-pos gold">1</div><div class="rank-avatar">👤</div><div class="rank-info"><div class="rank-name">Nodo anónimo</div><div class="rank-score">9 casos · Palermo</div></div><div class="rank-nfts">1.240 XP</div></div>
+      <div class="rank-item"><div class="rank-pos silver">2</div><div class="rank-avatar">👤</div><div class="rank-info"><div class="rank-name">Nodo anónimo</div><div class="rank-score">6 casos · Palermo</div></div><div class="rank-nfts">980 XP</div></div>
+      <div class="rank-item rank-me"><div class="rank-pos bronze">3</div><div class="rank-avatar">🟢</div><div class="rank-info"><div class="rank-name" style="color:var(--g)">Vos</div><div class="rank-score">3 casos · Palermo</div></div><div class="rank-nfts">197 XP</div></div>
+      <div class="rank-item"><div class="rank-pos" style="color:var(--dim)">4</div><div class="rank-avatar">👤</div><div class="rank-info"><div class="rank-name">Nodo anónimo</div><div class="rank-score">2 casos · Villa Crespo</div></div><div class="rank-nfts">140 XP</div></div>
+    </div>
+  </div>
+
+  <!-- ════════ PERFIL ════════ -->
+  <div id="sp" class="scr">
+    <div class="scr-hdr">
+      <div class="prof-av"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="prof-name">Nodo #DCM-0041</div>
+      <div class="prof-anon">Identidad cifrada · Solo vos sabés quién sos</div>
+    </div>
+    <div class="scroll" style="padding-top:0">
+      <div class="priv-section">
+        <div class="priv-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Controles de privacidad</div>
+        <div class="priv-row"><div class="priv-row-txt"><span class="priv-row-lbl">El fiscal puede pedir mis videos</span><span class="priv-row-sub">Solo con causa judicial activa. Tu identidad sigue oculta.</span></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+        <div class="priv-row"><div class="priv-row-txt"><span class="priv-row-lbl">Avisarme si usan mi evidencia</span><span class="priv-row-sub">Notificación anónima si el fiscal accede.</span></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+        <div class="priv-row"><div class="priv-row-txt"><span class="priv-row-lbl">Retención de evidencia</span><span class="priv-row-sub">Videos disponibles por: 30 días</span></div><div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--g);background:rgba(16,185,129,.08);padding:4px 8px;border-radius:6px;flex-shrink:0">30d ›</div></div>
+      </div>
+      <span class="sec-lbl">Mis cámaras</span>
+      <div class="dev-card">
+        <div class="dev-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+        <div><div class="dev-name">Hikvision DS-2CD2143</div><div class="dev-id">ID: DCM-0041-CAM · 1080p</div><div class="dev-live">Sellando en tiempo real</div></div>
+      </div>
+      <div class="install-card" id="btn-solicitar-cam">
+        <div class="install-card-hdr"><div class="ic-ico" style="background:rgba(16,185,129,.1)"><svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div><div class="ic-title">Solicitar equipo DeCam</div><div class="ic-sub">Instalación certificada · Comodato desde $15/mes</div></div></div>
+      </div>
+
+      <span class="sec-lbl">Configuración</span>
+      <div class="settings-block">
+        <div class="settings-row"><span>Notificaciones de alerta barrial</span><div class="toggle on"><div class="toggle-knob"></div></div></div>
+        <div class="settings-row"><span>Grabación automática ante alerta</span><div class="toggle off"><div class="toggle-knob"></div></div></div>
+        <div class="settings-row"><span style="color:var(--red)">Cerrar sesión</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ BOTTOM NAV ════════ -->
+  <div id="nav">
+    <button class="nb on" id="nb-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 12 2 21 11 21 22 15 22 15 15 9 15 9 22 3 22"/></svg>
+      Mapa
+    </button>
+    <button class="nb" id="nb-wallet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 11h2"/></svg>
+      Mis Aportes
+    </button>
+    <div class="nb-rec-wrap">
+      <button class="nb-rec" id="nb-rec">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </button>
+      <span class="nb-rec-lbl">REC</span>
+    </div>
+    <button class="nb nb-rel" id="nb-civismo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span class="nb-badge">3</span>
+      Mi Impacto
+    </button>
+    <button class="nb" id="nb-profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Perfil
+    </button>
+  </div>
+
+  <!-- ════════ MODALS ════════ -->
+  <!-- ════ SOLICITAR CÁMARA: explainer slides + form ════ -->
+  <!-- Slide explainer overlay -->
+  <div class="modal-overlay" id="modal-camara-explain" style="z-index:810">
+    <div class="modal-sheet" style="padding:0;border-radius:28px 28px 0 0;overflow:hidden">
+      <!-- Slide 1: Ya tengo cámara -->
+      <div id="cam-exp-0" style="padding:28px 24px 32px;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--g);letter-spacing:3px">01 — 03</div>
+          <button onclick="document.getElementById('modal-camara-explain').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1">×</button>
+        </div>
+        <div style="width:64px;height:64px;border-radius:18px;background:rgba(16,185,129,.1);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="1.5"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        </div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--txt);letter-spacing:.5px;margin-bottom:8px;line-height:1.2">Ya tengo cámara<br>en mi puerta</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px">Conectá la cámara que ya tenés a la Red DeCam. Nuestro equipo verifica el modelo y la ubicación. Si es compatible, te activamos el nodo.</div>
+        <div style="background:rgba(16,185,129,.08);border:1px solid var(--bdr);border-radius:12px;padding:14px 16px;margin-bottom:20px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--g);margin-bottom:4px">$7 / mes</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.4">Solo software y mantenimiento de red.<br>El hardware ya lo pusiste vos.</div>
+        </div>
+        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:18px">
+          <div style="width:20px;height:6px;border-radius:3px;background:var(--g)"></div>
+          <div style="width:6px;height:6px;border-radius:3px;background:var(--dim)"></div>
+          <div style="width:6px;height:6px;border-radius:3px;background:var(--dim)"></div>
+        </div>
+        <button onclick="camExpSlide(1)" style="width:100%;background:var(--g);color:#000;border:none;padding:16px;border-radius:13px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Siguiente →</button>
+      </div>
+      <!-- Slide 2: Quiero que me instalen -->
+      <div id="cam-exp-1" style="padding:28px 24px 32px;display:none;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--g);letter-spacing:3px">02 — 03</div>
+          <button onclick="document.getElementById('modal-camara-explain').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1">×</button>
+        </div>
+        <div style="width:64px;height:64px;border-radius:18px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--txt);letter-spacing:.5px;margin-bottom:8px;line-height:1.2">DeCam instala<br>la cámara por vos</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px">Un técnico certificado instala la cámara en la entrada de tu domicilio. Sin costo inicial. Comodato de 12 meses.</div>
+        <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:14px 16px;margin-bottom:8px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);margin-bottom:4px">$15 / mes</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.4">Durante 12 meses — incluye hardware + instalación + software.<br>Comodato: el equipo es de DeCam.</div>
+        </div>
+        <div style="background:rgba(16,185,129,.05);border:1px solid var(--bdr);border-radius:10px;padding:10px 14px;margin-bottom:18px;display:flex;align-items:center;gap:10px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <div style="font-size:11px;color:var(--muted);line-height:1.4">Después del mes 12, una vez amortizado el hardware, el costo baja automáticamente a <strong style="color:var(--g)">$7 / mes</strong>.</div>
+        </div>
+        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:18px">
+          <div style="width:6px;height:6px;border-radius:3px;background:var(--dim)"></div>
+          <div style="width:20px;height:6px;border-radius:3px;background:var(--g)"></div>
+          <div style="width:6px;height:6px;border-radius:3px;background:var(--dim)"></div>
+        </div>
+        <button onclick="camExpSlide(2)" style="width:100%;background:var(--g);color:#000;border:none;padding:16px;border-radius:13px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Siguiente →</button>
+        <button onclick="camExpSlide(0)" style="width:100%;background:none;border:1px solid var(--bdr2);color:var(--muted);padding:12px;border-radius:13px;font-size:12px;cursor:pointer;margin-top:8px;font-family:'Barlow',sans-serif">← Volver</button>
+      </div>
+      <!-- Slide 3: Elegí tu plan -->
+      <div id="cam-exp-2" style="padding:28px 24px 32px;display:none;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--g);letter-spacing:3px">03 — 03</div>
+          <button onclick="document.getElementById('modal-camara-explain').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1">×</button>
+        </div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--txt);letter-spacing:.5px;margin-bottom:16px">Elegí tu plan</div>
+        <!-- Plan A -->
+        <div id="plan-a" onclick="selectPlan('a')" style="background:var(--c2);border:2px solid var(--bdr);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .2s">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:var(--txt)">Conectar mi cámara</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--g)">$7/mes</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">Ya tengo hardware · Solo software y red</div>
+        </div>
+        <!-- Plan B -->
+        <div id="plan-b" onclick="selectPlan('b')" style="background:var(--c2);border:2px solid var(--bdr);border-radius:14px;padding:14px 16px;margin-bottom:20px;cursor:pointer;transition:border-color .2s">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:var(--txt)">Solicitar instalación</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--amber)">$15/mes</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">Comodato 12 meses · Luego baja a $7/mes</div>
+        </div>
+        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:18px">
+          <div style="width:6px;height:6px;border-radius:3px;background:var(--dim)"></div>
+          <div style="width:6px;height:6px;border-radius:3px;background:var(--dim)"></div>
+          <div style="width:20px;height:6px;border-radius:3px;background:var(--g)"></div>
+        </div>
+        <button id="btn-exp-continuar" onclick="openCamaraForm()" style="width:100%;background:var(--g);color:#000;border:none;padding:16px;border-radius:13px;font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Continuar con el plan</button>
+        <button onclick="camExpSlide(1)" style="width:100%;background:none;border:1px solid var(--bdr2);color:var(--muted);padding:12px;border-radius:13px;font-size:12px;cursor:pointer;margin-top:8px;font-family:'Barlow',sans-serif">← Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form de solicitud (aparece después del explainer) -->
+  <div class="modal-overlay" id="modal-camara" style="z-index:820">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="form-modal-title">Solicitar equipo DeCam</div>
+      <div class="modal-sub" id="form-modal-sub">Completá el formulario y un técnico te contacta en 48hs.</div>
+      <div class="form-group" id="form-tipo-prop"><label>Tipo de propiedad</label><select><option>Domicilio particular</option><option>Comercio / Local</option><option>Edificio / Consorcio</option><option>Barrio privado</option></select></div>
+      <div class="form-group"><label>Dirección completa</label><input type="text" placeholder="Calle, número, piso, depto"></div>
+      <div class="form-group"><label>Barrio</label><input type="text" placeholder="Ej: Palermo, CABA"></div>
+      <div class="form-group" id="form-lugar-inst"><label>Lugar de instalación</label><select><option>Frente a la calle (balcón/terraza)</option><option>Entrada del comercio</option><option>Puerta de cochera</option><option>Patio trasero</option></select></div>
+      <div class="form-group" id="form-marca-cam" style="display:none"><label>Marca y modelo de cámara</label><input type="text" placeholder="Ej: Hikvision DS-2CD2143G2"></div>
+      <div class="form-group"><label>Teléfono de contacto</label><input type="tel" placeholder="+54 11 xxxx-xxxx"></div>
+      <button class="modal-btn" id="btn-solicitar-submit">Enviar solicitud</button>
+      <button class="modal-close" id="btn-camara-close">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-vincular">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Vincular cámara IP</div>
+      <div class="modal-sub">Escaneá el QR de tu cámara o ingresá su dirección de red.</div>
+      <div style="background:var(--c2);border:1px solid var(--bdr2);border-radius:12px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:14px;gap:8px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
+        <span style="font-size:11px;color:var(--muted)">Tocá para escanear QR</span>
+      </div>
+      <div class="form-group"><label>IP de la cámara</label><input type="text" placeholder="192.168.1.xxx"></div>
+      <div class="form-group"><label>Ubicación</label><input type="text" placeholder="Ej: Balcón piso 3, Santa Fe"></div>
+      <button class="modal-btn" id="btn-vincular-submit">Vincular dispositivo</button>
+      <button class="modal-close" id="btn-vincular-close">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="offer-modal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Hacer oferta</div>
+      <div class="modal-sub">Tu oferta se enviará de forma anónima al ciudadano aportante.</div>
+      <div class="form-group"><label>NFT objetivo</label><input type="text" value="Lesiones Leves — Causa 23.230/2024" readonly style="opacity:.6"></div>
+      <div class="form-group"><label>Monto</label><input type="number" placeholder="Ej: 500 DCAM"></div>
+      <div class="form-group"><label>Motivo</label><select><option>Víctima directa</option><option>ONG / Asociación vecinal</option><option>Empresa (ESG/RSE)</option><option>Ciudadano solidario</option></select></div>
+      <button class="modal-btn" id="btn-offer-submit">Confirmar oferta</button>
+      <button class="modal-close" id="btn-offer-close">Cancelar</button>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+/* ════════════════════════════════════════════
+   DeCam v5 — Script limpio y funcional
+   Sin dependencias externas en el flujo principal
+════════════════════════════════════════════ */
+
+/* Scale del phone — corre inmediatamente */
+(function(){
+  function scale(){
+    var ph = document.getElementById('phone');
+    if(!ph) return;
+    var s = Math.min(window.innerWidth / 410, window.innerHeight / 870, 1);
+    ph.style.transform = 'scale(' + s + ')';
+  }
+  scale();
+  window.addEventListener('resize', scale);
+})();
+
+/* Todo el resto espera al DOM */
+window.addEventListener('load', function(){
+
+  /* ─── HELPERS ─── */
+  function el(id){ return document.getElementById(id); }
+  function on(id, ev, fn){ var e = el(id); if(e) e.addEventListener(ev, fn); }
+  function showEl(id){ var e = el(id); if(e) e.style.display = 'flex'; }
+  function hideEl(id){ var e = el(id); if(e) e.style.display = 'none'; }
+
+  /* ─── ONBOARDING ─── */
+  function showSlide(n){
+    [el('ob-s0'), el('ob-s1')].forEach(function(s, i){
+      if(!s) return;
+      if(i === n){ s.classList.add('on'); }
+      else { s.classList.remove('on'); }
+    });
+  }
+
+  on('ob-next-0', 'click', function(){ showSlide(1); });
+  on('ob-next-1', 'click', function(){ goToLogin(); });
+  on('ob-ya-tengo', 'click', function(){ goToLogin(); });
+
+  function goToLogin(){
+    var sob = el('sob');
+    var sl  = el('sl');
+    if(sob){ sob.classList.remove('on'); }
+    if(sl){  sl.classList.add('on'); }
+  }
+
+  /* ─── LOGIN ─── */
+  var map = null;
+  on('btn-login', 'click', function(){
+    el('sl').classList.remove('on');
+    el('sh').classList.add('on');
+    el('nav').style.display = 'flex';
+    initMap();
+    buildStreak();
+    setTimeout(function(){ var rb = el('rank-bar'); if(rb) rb.style.width = '49%'; }, 700);
+  });
+
+  /* ─── MAP ─── */
+  function initMap(){
+    if(map) return;
+    if(typeof L === 'undefined'){ setTimeout(initMap, 300); return; }
+    try{
+      map = L.map('map', { zoomControl:false, attributionControl:false });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom:19,
+        attribution:''
+      }).addTo(map);
+      // Dark filter over OSM tiles to match app theme
+      var mapEl = document.getElementById('map');
+      if(mapEl) mapEl.style.filter = 'invert(1) hue-rotate(200deg) brightness(0.7) saturate(0.6)';
+      map.setView([-34.5775, -58.4226], 14);
+      [[-34.5775,-58.4226],[-34.58,-58.418],[-34.575,-58.427],[-34.582,-58.425],[-34.576,-58.42],[-34.579,-58.43]].forEach(function(n,i){
+        var r = i===0?9:6, c = i===0?'#10B981':'rgba(16,185,129,.55)';
+        L.circleMarker(n, {radius:r,color:c,weight:2,fillColor:c,fillOpacity:.5}).addTo(map);
+      });
+      L.circle([-34.5775,-58.4226], {color:'#10B981',fillColor:'#10B981',fillOpacity:.05,radius:700,weight:1,dashArray:'4,6'}).addTo(map);
+      // Multiple invalidateSize calls to handle any timing issues
+      setTimeout(function(){ try{map.invalidateSize();}catch(e){} }, 100);
+      setTimeout(function(){ try{map.invalidateSize();}catch(e){} }, 500);
+      setTimeout(function(){ try{map.invalidateSize();}catch(e){} }, 1000);
+    }catch(e){ console.warn(e); }
+  }
+
+  /* ─── NAV ─── */
+  var mainScreens = ['sh','sw','sciv','sp'];
+  var navBtns     = ['nb-home','nb-wallet','nb-civismo','nb-profile'];
+
+  function goTab(screenId, btnId){
+    mainScreens.forEach(function(id){ var e=el(id); if(e) e.classList.remove('on'); });
+    navBtns.forEach(function(id){ var e=el(id); if(e) e.classList.remove('on'); });
+    var sc = el(screenId);
+    var nb = el(btnId);
+    if(sc) sc.classList.add('on');
+    if(nb) nb.classList.add('on');
+    if(screenId === 'sh' && map) setTimeout(function(){ map.invalidateSize(); }, 50);
+    if(screenId === 'sciv'){
+      var badge = el('impact-badge');
+      if(badge) badge.style.display = 'none';
+      setTimeout(function(){ var rb=el('rank-bar'); if(rb) rb.style.width='49%'; }, 300);
+    }
+  }
+
+  on('nb-home',    'click', function(){ goTab('sh','nb-home'); });
+  on('nb-wallet',  'click', function(){ goTab('sw','nb-wallet'); });
+  on('nb-civismo', 'click', function(){ goTab('sciv','nb-civismo'); });
+  on('nb-profile', 'click', function(){ goTab('sp','nb-profile'); });
+  on('nb-rec',     'click', startCam);
+
+  /* ─── CAMERA ─── */
+  var camT = null, camSecs = 30;
+
+  var isRecording = false;
+
+  function startCam(){
+    if(isRecording){ stopCam(); return; }
+    isRecording = true;
+    // Hide whichever main screen is currently visible
+    ['sh','sw','sciv','sp'].forEach(function(id){
+      var e = el(id); if(e) e.classList.remove('on');
+    });
+    el('sc').classList.add('on');
+    var vid = el('cam-vid');
+    try{
+      vid.currentTime = 0;
+      var playPromise = vid.play();
+      if(playPromise !== undefined){
+        playPromise.catch(function(e){
+          console.warn('Video play failed:', e);
+        });
+      }
+    }catch(e){ console.warn('Video error:', e); }
+    camSecs = 0;
+    el('cam-timer').textContent = '00:00';
+    camT = setInterval(function(){
+      camSecs++;
+      var m = Math.floor(camSecs / 60);
+      var s = camSecs % 60;
+      el('cam-timer').textContent = (m<10?'0'+m:m)+':'+(s<10?'0'+s:s);
+    }, 1000);
+    vid.onended = function(){ stopCam(); };
+  }
+
+  on('btn-stop-cam', 'click', stopCam);
+
+  function stopCam(){
+    if(!isRecording) return;
+    isRecording = false;
+    clearInterval(camT);
+    var vid = el('cam-vid');
+    try{ vid.onended = null; vid.pause(); }catch(e){}
+    el('sc').classList.remove('on');
+    runCeremony();
+  }
+
+  /* ─── CEREMONY ─── */
+  function runCeremony(){
+    var cer = el('ceremony');
+    if(cer) cer.style.display = 'flex';
+    var bar = el('cer-bar');
+    var h = '0x';
+    for(var i=0; i<64; i++) h += '0123456789abcdef'[Math.floor(Math.random()*16)];
+
+    var timings = [0, 900, 1900, 3000, 4000, 5000];
+    var pcts    = [16, 33, 50, 67, 83, 100];
+
+    timings.forEach(function(t, idx){
+      setTimeout(function(){
+        for(var k=0; k<6; k++){
+          var e = el('cs'+k);
+          if(!e) return;
+          e.classList.remove('active','done');
+          if(k < idx)       e.classList.add('done');
+          else if(k === idx) e.classList.add('active');
+        }
+        if(bar) bar.style.width = pcts[idx] + '%';
+        if(idx === 1){
+          var hp = el('cer-hash-preview');
+          if(hp){ hp.textContent = h.substring(0,28)+'...'; hp.style.opacity='1'; }
+        }
+        if(idx === 5){
+          var hd = el('cer-hash-display');
+          if(hd) hd.textContent = 'HASH: ' + h;
+        }
+      }, t);
+    });
+
+    setTimeout(function(){
+      if(cer) cer.style.display = 'none';
+      showSuccess(h);
+    }, 6200);
+  }
+
+  /* ─── SUCCESS ─── */
+  function showSuccess(h){
+    var now = new Date();
+    var t  = el('suc-time');
+    var he = el('suc-hash');
+    var so = el('suc-overlay');
+    if(t)  t.textContent  = now.toLocaleDateString('es-AR') + ' — ' + now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    if(he) he.textContent = h.substring(0,24)+'...';
+    if(so) so.style.display = 'flex';
+    spawnParticles();
+    setTimeout(function(){ var rb=el('suc-rbar'); if(rb) rb.style.width='66%'; }, 500);
+  }
+
+  on('btn-suc-close', 'click', function(){
+    var so = el('suc-overlay');
+    if(so) so.style.display = 'none';
+    goTab('sh','nb-home');
+  });
+
+  function spawnParticles(){
+    var wrap = el('suc-particles');
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    var cols = ['#10B981','#F59E0B','#EF4444','#3B82F6','#8B5CF6'];
+    for(var i=0; i<28; i++){
+      var p = document.createElement('div');
+      p.className = 'suc-p';
+      p.style.cssText = 'left:'+Math.random()*100+'%;top:'+(20+Math.random()*60)+'%;background:'+cols[Math.floor(Math.random()*cols.length)]+';animation-delay:'+(Math.random()*1.2)+'s;animation-duration:'+(1.2+Math.random()*.8)+'s;transform:rotate('+Math.random()*360+'deg)';
+      wrap.appendChild(p);
+    }
+  }
+
+  /* ─── WALLET TABS ─── */
+  on('tab-mine', 'click', function(){
+    el('view-mine').style.display = 'block';
+    el('view-market').style.display = 'none';
+    el('seg-bg').style.left = '3px';
+    el('tab-mine').classList.add('on');
+    el('tab-market').classList.remove('on');
+  });
+  on('tab-market', 'click', function(){
+    el('view-mine').style.display = 'none';
+    el('view-market').style.display = 'block';
+    el('seg-bg').style.left = 'calc(50% + 1px)';
+    el('tab-market').classList.add('on');
+    el('tab-mine').classList.remove('on');
+  });
+
+  /* ─── STREAK ─── */
+  function buildStreak(){
+    var wrap = el('streak-days');
+    if(!wrap) return;
+    var days   = ['L','M','X','J','V','S','D'];
+    var states = ['done','done','done','done','done','done','done','done','done','done','done','today','miss'];
+    var last7  = states.slice(states.length - 7);
+    wrap.innerHTML = days.map(function(d,i){
+      return '<div class="sd '+last7[i]+'">'+d+'</div>';
+    }).join('');
+  }
+
+  /* ─── MODALS ─── */
+  function showModal(id){ var e=el(id); if(e) e.style.display='flex'; }
+  function closeModal(id){ var e=el(id); if(e) e.style.display='none'; }
+
+  // Solicitar cámara
+  on('btn-solicitar-cam',    'click', function(){ openCamaraExplainer(); });
+  on('btn-camara-close',     'click', function(){ closeModal('modal-camara'); });
+  on('btn-solicitar-submit', 'click', function(){ closeModal('modal-camara'); });
+
+  // Vincular
+  on('btn-vincular-cam',    'click', function(){ showModal('modal-vincular'); });
+  on('btn-vincular-close',  'click', function(){ closeModal('modal-vincular'); });
+  on('btn-vincular-submit', 'click', function(){ closeModal('modal-vincular'); });
+
+  // Ofertar
+  on('btn-ofertar-1',  'click', function(){ showModal('offer-modal'); });
+  on('btn-ofertar-2',  'click', function(){ showModal('offer-modal'); });
+  on('btn-offer-close', 'click', function(){ closeModal('offer-modal'); });
+  on('btn-offer-submit','click', function(){ closeModal('offer-modal'); });
+
+  // Perfil cards
+  // btn-vincular-cam removed from perfil
+
+
+  /* ─── Cámara explainer ─── */
+  function openCamaraExplainer(){
+    camExpSlide(0);
+    showModal('modal-camara-explain');
+  }
+  window.camExpSlide = function(n){
+    [el('cam-exp-0'), el('cam-exp-1'), el('cam-exp-2')].forEach(function(s, i){
+      if(!s) return;
+      s.style.display = (i === n) ? 'flex' : 'none';
+    });
+  };
+  var selectedPlan = 'b';
+  window.selectPlan = function(plan){
+    selectedPlan = plan;
+    var pa = el('plan-a'), pb = el('plan-b');
+    if(pa) pa.style.borderColor = plan==='a' ? 'var(--g)' : 'var(--bdr)';
+    if(pb) pb.style.borderColor = plan==='b' ? 'var(--amber)' : 'var(--bdr)';
+    var ft = el('form-modal-title'), fs = el('form-modal-sub');
+    var mc = el('form-marca-cam'), li = el('form-lugar-inst');
+    if(plan === 'a'){
+      if(ft) ft.textContent = 'Conectar mi cámara existente';
+      if(fs) fs.textContent = 'Registrá tu cámara y el equipo DeCam confirma si es compatible.';
+      if(mc) mc.style.display = 'block';
+      if(li) li.style.display = 'none';
+    } else {
+      if(ft) ft.textContent = 'Solicitar instalación DeCam';
+      if(fs) fs.textContent = 'Un técnico te instala la cámara. Comodato 12 meses, luego $7/mes.';
+      if(mc) mc.style.display = 'none';
+      if(li) li.style.display = 'block';
+    }
+  };
+  window.openCamaraForm = function(){
+    closeModal('modal-camara-explain');
+    setTimeout(function(){
+      if(selectedPlan === 'a'){
+        // Plan A: ya tiene cámara → modal de vincular IP
+        showModal('modal-vincular');
+      } else {
+        // Plan B: quiere instalación → formulario de solicitud
+        showModal('modal-camara');
+      }
+    }, 200);
+  };
+
+}); // end window.load
+</script>
+
+</body>
+</html>
